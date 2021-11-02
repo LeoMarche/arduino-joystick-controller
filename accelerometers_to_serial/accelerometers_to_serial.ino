@@ -6,16 +6,20 @@
 
 //Objects
 Adafruit_MPU6050 mpu;
+float wy, wz;
+unsigned long myTime;
 
 void setup() {
   //Init Serial USB
   Serial.begin(9600);
-  Serial.println(F("Initialize System"));
- if (!mpu.begin()) { // Change address if needed
-    Serial.println("Failed to find MPU6050 chip");
+  Serial.println(0x0);
+  if (!mpu.begin()) { // Change address if needed
+    Serial.println(0xe0);
     while (1) {
       delay(10);
     }
+  } else {
+    Serial.println(0xe1);
   }
 
   mpu.setAccelerometerRange(MPU6050_RANGE_16_G);
@@ -33,24 +37,18 @@ void readMPU( ) { /* function readMPU */
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
 
-  /* Print out the values */
-  Serial.print("Acceleration X: ");
-  Serial.print(a.acceleration.x);
-  Serial.print(", Y: ");
-  Serial.print(a.acceleration.y);
-  Serial.print(", Z: ");
-  Serial.print(a.acceleration.z);
-  Serial.println(" m/s^2");
+  wy = g.gyro.y;
+  wz = g.gyro.z;
 
-  Serial.print("Rotation X: ");
-  Serial.print(g.gyro.x);
-  Serial.print(", Y: ");
-  Serial.print(g.gyro.y);
-  Serial.print(", Z: ");
-  Serial.print(g.gyro.z);
-  Serial.println(" rad/s");
-
-  Serial.print("Temperature: ");
-  Serial.print(temp.temperature);
-  Serial.println("°C");
+  if (abs(wy) > 0.2) {
+    Serial.println(0x21);
+    Serial.println(wy);
+    Serial.println(millis() - myTime);
+  }
+  if (abs(wz) > 0.2) {
+    Serial.println(0x22);
+    Serial.println(wz);
+    Serial.println(millis() - myTime);
+  }
+  myTime = millis();
 }
