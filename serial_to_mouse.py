@@ -1,81 +1,74 @@
 from os import error
 import serial
-#from pynput.keyboard import Controller
+from pynput.mouse import Controller
+from variables import SerialInput, CursorSpeed
 
-print("Hello Welcome to NBox 100")
+print(">>> Arduino-Joystick-Controller v-alpha")
+print(">>> Please edit 'variables.py' to enter the relevant informations for your setup")
 
-print("""Please enter the COM port of your controller.
-You can find it if you go to your device manager and look for COM & LPT
-section. find your device by unpluging it and pluging it again.
-You write it like:
-ex: COM8
-""")
+DEVICE_STARTED = 0x0
+NO_ACCELEROMETER = 0xe0
+ACCELEROMETER_DETECTED = 0xe1
+X_ACCEL = 0x10
+Y_ACCEL = 0x11
+Z_ACCEL = 0x12
+X_GYRO = 0x20
+Y_GYRO = 0x21
+Z_GYRO = 0x22
+TEMP = 0x30
 
-sInput = "COM5"
+ser = serial.Serial(SerialInput, 9600)
 
-ser = serial.Serial(sInput, 9600)
+print(">>> Connection established !")
 
-print("connection established")
+mouse = Controller()
 
-#keyboard = Controller()
-r = [0.0,0.0,0.0]
+def recv(ser, opcode, mouse):
 
-def recv(ser, opcode, r):
-    if opcode == 0x0:
-        print("Device has started")
-    elif opcode == 0xe0:
-        print("No accelerometer detected")
-    elif opcode == 0xe1:
-        print("Accelerometer detected")
-    elif opcode == 0x10:
-        print("X")
+    """
+    recv is the function that process the informations
+    coming from the mpu6050 through the Arduino
+    """
+
+    if opcode == DEVICE_STARTED:
+        print(">>> Device has started")
+    elif opcode == NO_ACCELEROMETER:
+        print(">>> No accelerometer detected")
+    elif opcode == ACCELEROMETER_DETECTED:
+        print(">>> Accelerometer detected")
+    elif opcode == X_ACCEL:
+        # Debug only
         print(ser.readline())
-    elif opcode == 0x11:
-        print("Y")
+    elif opcode == Y_ACCEL:
+        # Debug only
         print(ser.readline())
-    elif opcode == 0x12:
-        print("Z")
+    elif opcode == Z_ACCEL:
+        # Debug only
         print(ser.readline())
-    elif opcode == 0x20:
-        print("X")
+    elif opcode == X_GYRO:
+        # Debug only
         print(ser.readline())
-    elif opcode == 0x21:
+    elif opcode == Y_GYRO:
         v = float(ser.readline().rstrip())
         t = float(ser.readline().rstrip())
-        r[1] += v*t/1000
-        print(r[1])
-    elif opcode == 0x22:
+        mouse.move(0,int(CursorSpeed*(v*t/1000)))
+    elif opcode == Z_GYRO:
         v = float(ser.readline().rstrip())
         t = float(ser.readline().rstrip())
-        r[2] += v*t/1000
-        print(r[2])
-    elif opcode == 0x30:
-        print("T")
+        mouse.move(-int(CursorSpeed*v*t/1000),0)
+    elif opcode == TEMP:
+        # Debug only
+        print(">>> Temperature")
         print(ser.readline())
 
 while True:
     try:
+
+        # Retrieve opcode
         data = ser.readline()
         opcode = int(data.rstrip())
-        recv(ser, opcode,r)
+
+        # Process opcode
+        recv(ser, opcode, mouse)
     except Exception as e:
         print(e)
-
-    
-    """if data.decode().strip() == "d":
-        keyboard.press("d")
-
-    if data.decode().strip() == "!d":
-        keyboard.release("d")
-
-    if data.decode().strip() == "a":
-        keyboard.press("a")
-
-    if data.decode().strip() == "!a":
-        keyboard.release("a")
-
-    if data.decode().strip() == "f":
-        keyboard.press("f")
-
-    if data.decode().strip() == "!f":
-        keyboard.release("f")"""
